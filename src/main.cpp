@@ -40,30 +40,43 @@ void setup()
 {
  lcd.begin(16, 2);
  Serial.begin(9600);
+ Serial.println("Init i2c");
  Wire.begin();
  Wire.beginTransmission(DS1621);
- Wire.write((uint8_t) 0xA);
- Wire.write((uint8_t) 0xC);       // 0xAC = Config Command senden
- Wire.write((uint8_t) 0x0);
- Wire.write((uint8_t) 0x2);       // Commando ist: Continous Conversion
+ Wire.write(0xAC);                // Send commando
+ Serial.println("Init Kommando");
+
+ Wire.write(0x02);                // Commando ist: Continous Conversion
+ Serial.println("0x02 send");
  Wire.beginTransmission(DS1621);  // restart
- Wire.write((uint8_t) 0xE);
- Wire.write((uint8_t) 0xE);       // start conversions
+
+ Wire.write(0xEE);       // start conversions
+ Serial.println("Start Conversion");
+
  Wire.endTransmission();
- // write 0xAC should also work
  }
 
 void loop()
 {
-  if (Serial.available()) {
-    // wait a bit for the entire message to arrive
-    delay(100);
-    // clear the screen
-    lcd.clear();
-    // read all the available characters
-    while (Serial.available() > 0) {
-      // display each character to the LCD
-      lcd.write(Serial.read());
-    }
-  }
+  int8_t firstByte;
+  int8_t secondByte;
+  float temp = 0;
+
+  delay(1000);                                // give time for measurement
+
+  Wire.beginTransmission(DS1621);
+  Wire.write(0xAA);                            // read temperature command
+  Wire.endTransmission();
+  Wire.requestFrom(DS1621, 2);		// request two bytes from DS1621 (0.5 deg. resolution)
+
+  firstByte = Wire.read();		        // get first byte
+  secondByte = Wire.read();		// get second byte
+
+  temp = firstByte;
+
+  if (secondByte)			        // if there is a 0.5 deg difference
+      temp += 0.5;
+
+  Serial.println(temp);
+  lcd.clear();
 }
