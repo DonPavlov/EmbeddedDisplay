@@ -21,21 +21,20 @@ LiquidCrystal_I2C lcd(I2C_ADDR_DISP, EN_P, RW_P, RS_P, D4_P, D5_P, D6_P, D7_P);
 
 void setup()
 {
-/* Switch on the backlight */
-lcd.setBacklightPin(BACKLIGHT,POSITIVE);
-lcd.setBacklight(HIGH);
+  /* Switch on the backlight */
+  lcd.setBacklightPin(BACKLIGHT,POSITIVE);
+  lcd.setBacklight(HIGH);
 
-Serial.begin(9600);
-delay(5000); /* Security Delay to Start everything */
-Serial.println("Began Serial");
-lcd.begin(16,2);
-Serial.println("Began LCD");
-Wire.begin();
-Serial.println("Began Wire");
+  Serial.begin(9600);
+  delay(5000); /* Security Delay to Start everything */
+  Serial.println("Began Serial");
+  lcd.begin(16,2);
+  Serial.println("Began LCD");
+  Wire.begin();
+  Serial.println("Began Wire");
 
-/* Quick 3 blinks of backlight */
-for(int i = 0; i< 3; i++)
-  {
+  /* Quick 3 blinks of backlight */
+  for(int i = 0; i< 3; i++){
     lcd.backlight();
     delay(250);
     lcd.noBacklight();
@@ -52,29 +51,42 @@ for(int i = 0; i< 3; i++)
   lcd.setCursor(0,1);
   lcd.print("16x2 Display");
   lcd.setCursor(0,1);
+  /* Init the DS1621 */
+  Wire.beginTransmission(DS1621);
+  Wire.write(0xAC);                /* Send commando */
+  Serial.println("Init Kommando");
 
-  delay(8000);
-  // Wait and then tell user they can start the Serial Monitor and type in characters to
-  // Display. (Set Serial Monitor option to "No Line Ending")
-  lcd.setCursor(0,0); //Start at character 0 on line 0
-  lcd.print("Start Serial Monitor");
-  lcd.setCursor(0,1);
-  lcd.print("Type chars 2 display");
+  Wire.write(0x02);                /* Commando ist: Continous Conversion */
+  Serial.println("0x02 send");
+  Wire.beginTransmission(DS1621);  /* restart */
+
+  Wire.write(0xEE);       /* start conversions */
+  Serial.println("Start Conversion");
+
+  Wire.endTransmission();
 
 }
 
 void loop()
 {
-  // when characters arrive over the serial port...
-  if (Serial.available()) {
-    // wait a bit for the entire message to arrive
-    delay(100);
-    // clear the screen
-    lcd.clear();
-    // read all the available characters
-    while (Serial.available() > 0) {
-      // display each character to the LCD
-      lcd.write(Serial.read());
-    }
-  }
+  int8_t firstByte;
+  int8_t secondByte;
+  float temp = 0;
+
+  delay(1000);    // give time for measurement
+
+  Wire.beginTransmission(DS1621);
+  Wire.write(0xAA);                            // read temperature command
+  Wire.endTransmission();
+  Wire.requestFrom(DS1621, 2);		// request two bytes from DS1621 (0.5 deg. resolution)
+
+  firstByte = Wire.read();		        // get first byte
+  secondByte = Wire.read();		// get second byte
+
+  temp = firstByte;
+
+  if (secondByte)			        // if there is a 0.5 deg difference
+      temp += 0.5;
+
+  Serial.println(temp);
 }
