@@ -1,0 +1,8 @@
+Debug information:
+Serial Monitor readings:
+
+I2C scanner. Scanning ...
+Found address: 39 (0x27)
+Found address: 79 (0x4F)
+Done.
+Found 2 device(s).

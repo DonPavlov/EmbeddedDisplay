@@ -1,82 +1,77 @@
-/******************************************************************************/
-/* Paul Hein                                                                  */
-/*                                                                            */
-/* 3.3.2017                                                                   */
-/* Pro Micro Test Code for i2c-Bus, 16x2 Display, and more                    */
-/*                                                                            */
-/******************************************************************************/
 #include <Arduino.h>
-#include <LiquidCrystal.h>
 #include <Wire.h>
-#include <avr/io.h>
-#include <avr/interrupt.h>
+#include <LCD.h>
+#include <LiquidCrystal_I2C.h>
 
-/* SDA Pin 2, SCL Pin 3 */
-#define DS1621 0b1001000
+/* Display */
+#define I2C_ADDR_DISP 0x27 /* Define I2C Address for controller */
+#define EN_P 2
+#define RW_P 1
+#define RS_P 0
+#define D4_P 4
+#define D5_P 5
+#define D6_P 6
+#define D7_P 7
+#define BACKLIGHT 3
 
-/*
-* The circuit:
-* LCD RS pin to digital pin 9
-* LCD Enable pin to digital pin 8
-* LCD D4 pin to digital pin 7
-* LCD D5 pin to digital pin 6
-* LCD D6 pin to digital pin 5
-* LCD D7 pin to digital pin 4
-* LCD R/W pin to ground
-* 10K resistor:
-* ends to +5V and ground
-* wiper to LCD VO pin (pin 3) (poti middlepin)
-* Anode to 200 Ohm to ground
-* Kathode to +5V
-* VSS to ground
-* VDD to +5V
-* RW to ground
-*/
-LiquidCrystal lcd(9, 8, 4, 5, 6, 7);
+/* DS1621 Temperature Chip */
+#define DS1621 0b1001000 /* SDA Pin 2, SCL Pin 3 */
 
-char meh[100];
+LiquidCrystal_I2C lcd(I2C_ADDR_DISP, EN_P, RW_P, RS_P, D4_P, D5_P, D6_P, D7_P);
 
 void setup()
 {
- lcd.begin(16, 2);
- Serial.begin(9600);
- Serial.println("Init i2c");
- Wire.begin();
- Wire.beginTransmission(DS1621);
- Wire.write(0xAC);                // Send commando
- Serial.println("Init Kommando");
+lcd.begin (20,4); // initialize the lcd
 
- Wire.write(0x02);                // Commando ist: Continous Conversion
- Serial.println("0x02 send");
- Wire.beginTransmission(DS1621);  // restart
+/* Switch on the backlight */
+lcd.setBacklightPin(BACKLIGHT,POSITIVE);
+lcd.setBacklight(HIGH);
 
- Wire.write(0xEE);       // start conversions
- Serial.println("Start Conversion");
+Serial.begin(9600);
+lcd.begin(16,2);
 
- Wire.endTransmission();
- }
+/* Quick 3 blinks of backlight */
+for(int i = 0; i< 3; i++)
+  {
+    lcd.backlight();
+    delay(250);
+    lcd.noBacklight();
+    delay(250);
+  }
+
+  lcd.backlight();
+  lcd.setCursor(1,0);
+  lcd.print("hello Master!");
+  delay(1000);
+  lcd.setCursor(1,1);
+  lcd.print("I <3 YOU");
+  delay(1000);
+  lcd.setCursor(0,1);
+  lcd.print("16x2 Display");
+  lcd.setCursor(0,1);
+
+  delay(8000);
+  // Wait and then tell user they can start the Serial Monitor and type in characters to
+  // Display. (Set Serial Monitor option to "No Line Ending")
+  lcd.setCursor(0,0); //Start at character 0 on line 0
+  lcd.print("Start Serial Monitor");
+  lcd.setCursor(0,1);
+  lcd.print("Type chars 2 display");
+
+}
 
 void loop()
 {
-  int8_t firstByte;
-  int8_t secondByte;
-  float temp = 0;
-
-  delay(1000);                                // give time for measurement
-
-  Wire.beginTransmission(DS1621);
-  Wire.write(0xAA);                            // read temperature command
-  Wire.endTransmission();
-  Wire.requestFrom(DS1621, 2);		// request two bytes from DS1621 (0.5 deg. resolution)
-
-  firstByte = Wire.read();		        // get first byte
-  secondByte = Wire.read();		// get second byte
-
-  temp = firstByte;
-
-  if (secondByte)			        // if there is a 0.5 deg difference
-      temp += 0.5;
-
-  Serial.println(temp);
-  lcd.clear();
+  // when characters arrive over the serial port...
+  if (Serial.available()) {
+    // wait a bit for the entire message to arrive
+    delay(100);
+    // clear the screen
+    lcd.clear();
+    // read all the available characters
+    while (Serial.available() > 0) {
+      // display each character to the LCD
+      lcd.write(Serial.read());
+    }
+  }
 }
