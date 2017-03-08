@@ -21,14 +21,17 @@ LiquidCrystal_I2C lcd(I2C_ADDR_DISP, EN_P, RW_P, RS_P, D4_P, D5_P, D6_P, D7_P);
 
 void setup()
 {
-lcd.begin (20,4); // initialize the lcd
-
 /* Switch on the backlight */
 lcd.setBacklightPin(BACKLIGHT,POSITIVE);
 lcd.setBacklight(HIGH);
 
 Serial.begin(9600);
+delay(5000); /* Security Delay to Start everything */
+Serial.println("Began Serial");
 lcd.begin(16,2);
+Serial.println("Began LCD");
+Wire.begin();
+Serial.println("Began Wire");
 
 /* Quick 3 blinks of backlight */
 for(int i = 0; i< 3; i++)
